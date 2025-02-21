@@ -11,7 +11,12 @@
             "module": "odin.main",
             "justMyCode": false,
             "console": "integratedTerminal",
-            "args": ["--config", "${workspaceFolder}/deploy/odin_server.cfg", "--logging", "info"]
+            "args": [
+                "--config",
+                "${workspaceFolder}/deploy/odin_server.cfg",
+                "--logging",
+                "info"
+            ]
         },
         {
             "name": "Meta Writer",
@@ -46,38 +51,24 @@
             },
         },
         {
-            "name": "Eiger Fan",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/vscode_build/bin/eigerfan",
-            "args": ["--addr", "127.0.0.1", "--consumers", "4", "--sockets", "4", "--blocksize", "1000", "--threads", "2"],
-            "stopAtEntry": false,
-            "cwd": "${fileDirname}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
             "name": "FrameProcessor",
             "type": "cppdbg",
             "request": "launch",
             "program": "/odin/bin/frameProcessor",
-            "args": ["--ctrl", "tcp://0.0.0.0:10004", "--config", "${workspaceFolder}/deploy/fp1.json"],
+            "args": [
+                "--ctrl",
+                "tcp://0.0.0.0:10004",
+                "--config",
+                "${workspaceFolder}/deploy/fp1.json"
+            ],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
-            "environment": [{"name": "HDF5_PLUGIN_PATH", "value": "/odin/h5plugin"}],
+            "environment": [
+                {
+                    "name": "HDF5_PLUGIN_PATH",
+                    "value": "/odin/h5plugin"
+                }
+            ],
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [

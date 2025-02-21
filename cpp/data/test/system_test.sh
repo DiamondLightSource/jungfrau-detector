@@ -51,31 +51,12 @@ echo 'Starting Frame Receiver'
 
 sleep 2
 
-cd $odinbuilddir
-./bin/frameReceiver -m 500000000 --json_file=$outputdir/fr1.json &
-framereceiver_pid=$!
-
-sleep 2
-
 echo 'Starting Frame Processor'
 
 cd $odinbuilddir
 export HDF5_PLUGIN_PATH=/dls_sw/work/tools/RHEL6-x86_64/hdf5filters/prefix/h5plugin
 ./bin/frameProcessor --json_file=$outputdir/fp1.json &
 frameprocessor_pid=$!
-
-echo 'Starting EigerFan'
-
-cd $eigerbuilddir/bin/
-./eigerfan &
-eigerfan_pid=$!
-
-sleep 2
-
-echo 'Configuring Fan'
-
-cd $eigertestdir
-dls-python SendFanControl.py &
 
 sleep 2
 
@@ -86,14 +67,8 @@ $eigerbuilddir/bin/streamSender
 
 sleep 2
 
-echo 'Killing EigerFan'
-kill $eigerfan_pid
-
 echo 'Killing FrameProcessor'
 kill $frameprocessor_pid
-
-echo 'Killing FrameReceiver'
-kill $framereceiver_pid
 
 echo 'Killing Meta Listener'
 kill $metalistener_pid

@@ -32,6 +32,5 @@
     </logger>
     <logger name="ED.UnitTest"></logger>
     <logger name="ED.APP"></logger>
-    <logger name="ED.EigerFan"></logger>
 
 </log4j:configuration>
