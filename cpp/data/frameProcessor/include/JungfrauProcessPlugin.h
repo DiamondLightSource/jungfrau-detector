@@ -1,12 +1,12 @@
 /*
- * EigerProcessPlugin.h
+ * JungfrauProcessPlugin.h
  *
  *  Created on: 8 May 2017
  *      Author: Matt Taylor
  */
 
-#ifndef TOOLS_FILEWRITER_EIGERPROCESSPLUGIN_H_
-#define TOOLS_FILEWRITER_EIGERPROCESSPLUGIN_H_
+#ifndef TOOLS_FILEWRITER_JUNGFRAUPROCESSPLUGIN_H_
+#define TOOLS_FILEWRITER_JUNGFRAUPROCESSPLUGIN_H_
 
 #include <log4cxx/logger.h>
 #include <log4cxx/basicconfigurator.h>
@@ -17,7 +17,7 @@ using namespace log4cxx::helpers;
 
 #include "FrameProcessorPlugin.h"
 #include "ClassLoader.h"
-#include "EigerDefinitions.h"
+#include "JungfrauDefinitions.h"
 #include <stdint.h>
 
 namespace FrameProcessor
@@ -29,17 +29,17 @@ namespace FrameProcessor
   const int UINT16_DATATYPE = 1;
   const int UINT32_DATATYPE = 2;
 
-  /** Processing of Eiger Frame objects.
+  /** Processing of Jungfrau Frame objects.
    *
-   * The EigerProcessPlugin class is responsible for receiving a raw data
+   * The JungfrauProcessPlugin class is responsible for receiving a raw data
    * Frame object and parsing the header information. Depending on the frame type, it
    * sends raw image data on down the chain, or sends meta data out to subscribers.
    */
-  class EigerProcessPlugin : public FrameProcessorPlugin
+  class JungfrauProcessPlugin : public FrameProcessorPlugin
   {
   public:
-    EigerProcessPlugin();
-    virtual ~EigerProcessPlugin();
+    JungfrauProcessPlugin();
+    virtual ~JungfrauProcessPlugin();
 
     int get_version_major();
     int get_version_minor();
@@ -49,9 +49,9 @@ namespace FrameProcessor
 
   private:
     void process_frame(boost::shared_ptr<Frame> frame);
-    void setFrameEncoding(FrameMetaData &frame, const Eiger::FrameHeader* hdrPtr);
-    void setFrameDataType(FrameMetaData &frame, const Eiger::FrameHeader* hdrPtr);
-    void setFrameDimensions(FrameMetaData &frame, const Eiger::FrameHeader* hdrPtr);
+    void setFrameEncoding(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
+    void setFrameDataType(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
+    void setFrameDimensions(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
     /** Pointer to logger */
     LoggerPtr logger_;
   };
@@ -60,8 +60,8 @@ namespace FrameProcessor
    * Registration of this plugin through the ClassLoader.  This macro
    * registers the class without needing to worry about name mangling
    */
-  REGISTER(FrameProcessorPlugin, EigerProcessPlugin, "EigerProcessPlugin");
+  REGISTER(FrameProcessorPlugin, JungfrauProcessPlugin, "JungfrauProcessPlugin");
 
 } /* namespace FrameProcessor */
 
-#endif /* TOOLS_FILEWRITER_EIGERPROCESSPLUGIN_H_ */
+#endif /* TOOLS_FILEWRITER_JUNGFRAUPROCESSPLUGIN_H_ */

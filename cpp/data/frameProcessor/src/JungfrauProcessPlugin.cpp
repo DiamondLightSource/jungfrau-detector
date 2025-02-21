@@ -1,11 +1,11 @@
 /*
- * EigerProcessPlugin.cpp
+ * JungfrauProcessPlugin.cpp
  *
  *  Created on: 8 May 2017
  *      Author: Matt Taylor
  */
 
-#include <EigerProcessPlugin.h>
+#include <JungfrauProcessPlugin.h>
 #include "Json.h"
 
 namespace FrameProcessor
@@ -14,18 +14,18 @@ namespace FrameProcessor
   /**
    * Constuctor
    */
-  EigerProcessPlugin::EigerProcessPlugin()
+  JungfrauProcessPlugin::JungfrauProcessPlugin()
   {
     // Setup logging for the class
-    logger_ = Logger::getLogger("FP.EigerProcessPlugin");
+    logger_ = Logger::getLogger("FP.JungfrauProcessPlugin");
     logger_->setLevel(Level::getAll());
-    LOG4CXX_TRACE(logger_, "EigerProcessPlugin constructor.");
+    LOG4CXX_TRACE(logger_, "JungfrauProcessPlugin constructor.");
   }
 
   /**
    * Destructor
    */
-  EigerProcessPlugin::~EigerProcessPlugin()
+  JungfrauProcessPlugin::~JungfrauProcessPlugin()
   {
   }
 
@@ -34,9 +34,9 @@ namespace FrameProcessor
    *
    * \param[in] frame The frame to process
    */
-  void EigerProcessPlugin::process_frame(boost::shared_ptr<Frame> frame)
+  void JungfrauProcessPlugin::process_frame(boost::shared_ptr<Frame> frame)
   {
-    const Eiger::FrameHeader* hdrPtr = static_cast<const Eiger::FrameHeader*>(frame->get_image_ptr());
+    const Jungfrau::FrameHeader *hdrPtr = static_cast<const Jungfrau::FrameHeader *>(frame->get_image_ptr());
 
     LOG4CXX_TRACE(logger_, "FrameHeader frame currentMessageType: " << hdrPtr->messageType);
     LOG4CXX_TRACE(logger_, "FrameHeader frame series: " << hdrPtr->series);
@@ -59,8 +59,9 @@ namespace FrameProcessor
     OdinData::JsonDict json;
     json.add("acqID", acqIDString);
 
-    if (hdrPtr->messageType == Eiger::IMAGE_DATA) {
-      frame->set_image_offset(sizeof(Eiger::FrameHeader));
+    if (hdrPtr->messageType == Jungfrau::IMAGE_DATA)
+    {
+      frame->set_image_offset(sizeof(Jungfrau::FrameHeader));
       frame->set_image_size(hdrPtr->data_size);
 
       FrameMetaData frame_meta_data;
@@ -114,29 +115,37 @@ namespace FrameProcessor
       std::string hashString(hdrPtr->hash);
       json.add("hash", hashString);
 
-      publish_meta(get_name(), "eiger-imagedata", json.str(), json.str());
+      publish_meta(get_name(), "jungfrau-imagedata", json.str(), json.str());
 
       this->push(frame);
-    } else if (hdrPtr->messageType == Eiger::IMAGE_APPENDIX) {
-      std::string dataString((static_cast<const char*>(frame->get_image_ptr())+sizeof(Eiger::FrameHeader)), hdrPtr->data_size);
+    }
+    else if (hdrPtr->messageType == Jungfrau::IMAGE_APPENDIX)
+    {
+      std::string dataString((static_cast<const char *>(frame->get_image_ptr()) + sizeof(Jungfrau::FrameHeader)), hdrPtr->data_size);
 
       // Add Frame number
       json.add("frame", hdrPtr->frame_number);
 
-      publish_meta(get_name(), "eiger-imageappendix", dataString, json.str());
-    } else if (hdrPtr->messageType == Eiger::GLOBAL_HEADER_NONE) {
+      publish_meta(get_name(), "jungfrau-imageappendix", dataString, json.str());
+    }
+    else if (hdrPtr->messageType == Jungfrau::GLOBAL_HEADER_NONE)
+    {
       // Add Series number
       json.add("series", hdrPtr->series);
 
-      publish_meta(get_name(), "eiger-globalnone", json.str(), json.str());
-    } else if (hdrPtr->messageType == Eiger::GLOBAL_HEADER_CONFIG) {
-      std::string dataString((static_cast<const char*>(frame->get_image_ptr())+sizeof(Eiger::FrameHeader)), hdrPtr->data_size);
+      publish_meta(get_name(), "jungfrau-globalnone", json.str(), json.str());
+    }
+    else if (hdrPtr->messageType == Jungfrau::GLOBAL_HEADER_CONFIG)
+    {
+      std::string dataString((static_cast<const char *>(frame->get_image_ptr()) + sizeof(Jungfrau::FrameHeader)), hdrPtr->data_size);
 
       // Add Series number
       json.add("series", hdrPtr->series);
 
-      publish_meta(get_name(), "eiger-globalconfig", dataString, json.str());
-    } else if (hdrPtr->messageType == Eiger::GLOBAL_HEADER_FLATFIELD) {
+      publish_meta(get_name(), "jungfrau-globalconfig", dataString, json.str());
+    }
+    else if (hdrPtr->messageType == Jungfrau::GLOBAL_HEADER_FLATFIELD)
+    {
       // Add shape
       std::vector<uint32_t> shape;
       shape.push_back(hdrPtr->shapeSizeX);
@@ -147,8 +156,10 @@ namespace FrameProcessor
       std::string dataTypeString(hdrPtr->dataType);
       json.add("type", dataTypeString);
 
-      publish_meta(get_name(), "eiger-globalflatfield", reinterpret_cast<const void*>(static_cast<const char*>(frame->get_image_ptr())+sizeof(Eiger::FrameHeader)), hdrPtr->data_size, json.str());
-    } else if (hdrPtr->messageType == Eiger::GLOBAL_HEADER_MASK) {
+      publish_meta(get_name(), "jungfrau-globalflatfield", reinterpret_cast<const void *>(static_cast<const char *>(frame->get_image_ptr()) + sizeof(Jungfrau::FrameHeader)), hdrPtr->data_size, json.str());
+    }
+    else if (hdrPtr->messageType == Jungfrau::GLOBAL_HEADER_MASK)
+    {
       // Add shape
       std::vector<uint32_t> shape;
       shape.push_back(hdrPtr->shapeSizeX);
@@ -159,8 +170,10 @@ namespace FrameProcessor
       std::string dataTypeString(hdrPtr->dataType);
       json.add("type", dataTypeString);
 
-      publish_meta(get_name(), "eiger-globalmask", reinterpret_cast<const void*>(static_cast<const char*>(frame->get_image_ptr())+sizeof(Eiger::FrameHeader)), hdrPtr->data_size, json.str());
-    } else if (hdrPtr->messageType == Eiger::GLOBAL_HEADER_COUNTRATE) {
+      publish_meta(get_name(), "jungfrau-globalmask", reinterpret_cast<const void *>(static_cast<const char *>(frame->get_image_ptr()) + sizeof(Jungfrau::FrameHeader)), hdrPtr->data_size, json.str());
+    }
+    else if (hdrPtr->messageType == Jungfrau::GLOBAL_HEADER_COUNTRATE)
+    {
       // Add shape
       std::vector<uint32_t> shape;
       shape.push_back(hdrPtr->shapeSizeX);
@@ -171,16 +184,20 @@ namespace FrameProcessor
       std::string dataTypeString(hdrPtr->dataType);
       json.add("type", dataTypeString);
 
-      publish_meta(get_name(), "eiger-globalcountrate", reinterpret_cast<const void*>(static_cast<const char*>(frame->get_image_ptr())+sizeof(Eiger::FrameHeader)), hdrPtr->data_size, json.str());
-    } else if (hdrPtr->messageType == Eiger::GLOBAL_HEADER_APPENDIX) {
-      std::string dataString((static_cast<const char*>(frame->get_image_ptr())+sizeof(Eiger::FrameHeader)), hdrPtr->data_size);
+      publish_meta(get_name(), "jungfrau-globalcountrate", reinterpret_cast<const void *>(static_cast<const char *>(frame->get_image_ptr()) + sizeof(Jungfrau::FrameHeader)), hdrPtr->data_size, json.str());
+    }
+    else if (hdrPtr->messageType == Jungfrau::GLOBAL_HEADER_APPENDIX)
+    {
+      std::string dataString((static_cast<const char *>(frame->get_image_ptr()) + sizeof(Jungfrau::FrameHeader)), hdrPtr->data_size);
 
-      publish_meta(get_name(), "eiger-headerappendix", dataString, json.str());
-    } else if (hdrPtr->messageType == Eiger::END_OF_STREAM) {
+      publish_meta(get_name(), "jungfrau-headerappendix", dataString, json.str());
+    }
+    else if (hdrPtr->messageType == Jungfrau::END_OF_STREAM)
+    {
       // Add Series number
       json.add("series", hdrPtr->series);
 
-      publish_meta(get_name(), "eiger-end", "", json.str());
+      publish_meta(get_name(), "jungfrau-end", "", json.str());
     }
   }
 
@@ -190,19 +207,26 @@ namespace FrameProcessor
    * \param[out] frame The frame Meta Data object to set the encoding on
    * \param[in] hdrPtr The header containing the encoding
    */
-  void EigerProcessPlugin::setFrameEncoding(FrameMetaData &frame, const Eiger::FrameHeader* hdrPtr) {
+  void JungfrauProcessPlugin::setFrameEncoding(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr)
+  {
     std::string encoding(hdrPtr->encoding);
 
     // Parse out lz4
     std::size_t found = encoding.find("lz4");
-    if (found != std::string::npos) {
+    if (found != std::string::npos)
+    {
       found = encoding.find("bs");
-      if (found != std::string::npos) {
+      if (found != std::string::npos)
+      {
         frame.set_compression_type(bslz4);
-      } else {
+      }
+      else
+      {
         frame.set_compression_type(lz4);
       }
-    } else {
+    }
+    else
+    {
       frame.set_compression_type(no_compression);
     }
   }
@@ -213,16 +237,24 @@ namespace FrameProcessor
    * \param[out] frame The frame Meta Data object to set the encoding on
    * \param[in] hdrPtr The header containing the encoding
    */
-  void EigerProcessPlugin::setFrameDataType(FrameMetaData &frame, const Eiger::FrameHeader* hdrPtr) {
+  void JungfrauProcessPlugin::setFrameDataType(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr)
+  {
     std::string dataType(hdrPtr->dataType);
 
-    if (dataType.compare("uint8") == 0) {
+    if (dataType.compare("uint8") == 0)
+    {
       frame.set_data_type(raw_8bit);
-    } else if (dataType.compare("uint16") == 0) {
+    }
+    else if (dataType.compare("uint16") == 0)
+    {
       frame.set_data_type(raw_16bit);
-    } else if (dataType.compare("uint32") == 0) {
+    }
+    else if (dataType.compare("uint32") == 0)
+    {
       frame.set_data_type(raw_32bit);
-    } else {
+    }
+    else
+    {
       LOG4CXX_ERROR(logger_, "Unknown frame data type :" << dataType);
     }
   }
@@ -233,9 +265,11 @@ namespace FrameProcessor
    * \param[out] frame The frame Meta Data object to set the encoding on
    * \param[in] hdrPtr The header containing the dimensions
    */
-  void EigerProcessPlugin::setFrameDimensions(FrameMetaData &frame, const Eiger::FrameHeader* hdrPtr) {
+  void JungfrauProcessPlugin::setFrameDimensions(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr)
+  {
     dimensions_t dims;
-    if (hdrPtr->shapeSizeZ > 0) {
+    if (hdrPtr->shapeSizeZ > 0)
+    {
       dims.push_back(hdrPtr->shapeSizeZ);
     }
     dims.push_back(hdrPtr->shapeSizeY);
@@ -244,27 +278,27 @@ namespace FrameProcessor
     frame.set_dimensions(dims);
   }
 
-  int EigerProcessPlugin::get_version_major()
+  int JungfrauProcessPlugin::get_version_major()
   {
     return EIGER_DETECTOR_VERSION_MAJOR;
   }
 
-  int EigerProcessPlugin::get_version_minor()
+  int JungfrauProcessPlugin::get_version_minor()
   {
     return EIGER_DETECTOR_VERSION_MINOR;
   }
 
-  int EigerProcessPlugin::get_version_patch()
+  int JungfrauProcessPlugin::get_version_patch()
   {
     return EIGER_DETECTOR_VERSION_PATCH;
   }
 
-  std::string EigerProcessPlugin::get_version_short()
+  std::string JungfrauProcessPlugin::get_version_short()
   {
     return EIGER_DETECTOR_VERSION_STR_SHORT;
   }
 
-  std::string EigerProcessPlugin::get_version_long()
+  std::string JungfrauProcessPlugin::get_version_long()
   {
     return EIGER_DETECTOR_VERSION_STR;
   }

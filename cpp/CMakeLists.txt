@@ -1,6 +1,6 @@
 # Project name
-project(EigerDetector)
-set(SOURCE_DIR ${EigerDetector_SOURCE_DIR})
+project(JungfrauDetector)
+set(SOURCE_DIR ${JungfrauDetector_SOURCE_DIR})
 
 # Require CMake version >=2.8
 cmake_minimum_required(VERSION 2.8)
@@ -26,7 +26,7 @@ find_package(ZEROMQ 3.2.4 REQUIRED)
 find_package(ODINDATA REQUIRED)
 
 # Git versioning
-message("Determining eiger-detector version")
+message("Determining jungfrau-detector version")
 include(GetGitRevisionDescription)
 git_describe(GIT_DESC_STR)
 string(REGEX REPLACE "^([0-9]+)[\\.-].*" "\\1" VERSION_MAJOR "${GIT_DESC_STR}")
