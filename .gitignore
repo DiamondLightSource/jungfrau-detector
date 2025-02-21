@@ -1,0 +1,14 @@
+*~
+*.pyc
+prefix/
+build_name*
+build-dir/
+*build/
+*dist/
+*.egg-info
+.idea/
+cmake-build-debug/
+
+.coverage
+cov.xml
+.tox
