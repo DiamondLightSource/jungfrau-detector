@@ -84,6 +84,62 @@ namespace FrameProcessor
     }
     '''
   }
+
+  // Listen on ZMQ channel for detector data
+  void JungfrauProcessPlugin::handle_rx_socket()
+  {
+    LOG4CXX_INFO(logger_, "Connected to " << this->endpoint_ << " - Listening...");
+
+    // Declare a ZMQ message object (Used to receive or send a message over a ZMQ socket)
+    // and a structure to describe the socket to be polled
+    // First 0 = Polling socket and not file descriptor
+    // ZMQ_POLLIN makes it follow readable events
+    // Last 0 = Initialise revents (returned events) to zero
+    zmq::message_t buffer_message;
+    zmq::pollitem_t items[] = {{this->zmq_socket_, 0, ZMQ_POLLIN, 0}};
+
+    while (this->isWorking())
+    {
+      // Poll for 1000ms and skip loop if no messages were received (to check for shutdown)
+      zmq::poll(&items[0], 1, 1000);
+      if (!(items[0].revents & ZMQ_POLLIN))
+      {
+        continue;
+      }
+
+      // Message found on socket
+      zmq_socket_.recv(&buffer_message);
+      LOG4CXX_DEBUG_LEVEL(1, logger_, "Received data message");
+
+      struct Jungfrau_Message *message;
+      const uint8_t *buffer_message_ptr = (const uint8_t *)buffer_message.data();
+      // #####################
+      // stream2_result error = stream2_parse_msg(buffer_message_ptr, buffer_message.size(), &message);
+      // if (error)
+      // {
+      //   LOG4CXX_ERROR(logger_, "parse_msg returned error code " << (int)error);
+      //   continue;
+      // }
+
+      // switch (message->type)
+      // {
+      // case STREAM2_MSG_START:
+      //   handle_start_msg((struct stream2_start_msg *)message, buffer_message);
+      //   break;
+      // case STREAM2_MSG_IMAGE:
+      //   handle_image_msg((struct stream2_image_msg *)message, buffer_message);
+      //   break;
+      // case STREAM2_MSG_END:
+      //   handle_end_msg((struct stream2_end_msg *)message, buffer_message);
+      //   break;
+      // }
+      // #######################
+
+      stream2_free_msg(message);
+    }
+
+    LOG4CXX_INFO(logger_, "Shutting down");
+  }
   }
 
   /**

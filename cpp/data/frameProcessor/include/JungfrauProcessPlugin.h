@@ -15,6 +15,8 @@
 using namespace log4cxx;
 using namespace log4cxx::helpers;
 
+#include "zmq/zmq.hpp"
+
 #include "FrameProcessorPlugin.h"
 #include "ClassLoader.h"
 #include "JungfrauDefinitions.h"
@@ -58,10 +60,22 @@ namespace FrameProcessor
     std::string get_version_long();
 
   private:
-    void process_frame(boost::shared_ptr<Frame> frame);
-    void setFrameEncoding(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
-    void setFrameDataType(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
-    void setFrameDimensions(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
+    /** Handle data stream socket */
+    void handle_rx_socket();
+    // void process_frame(boost::shared_ptr<Frame> frame);
+    // void setFrameEncoding(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
+    // void setFrameDataType(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
+    // void setFrameDimensions(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
+    /** Data stream endpoint to connect to */
+    std::string endpoint_;
+    /** ZeroMQ context */
+    zmq::context_t zmq_context_;
+    /** ZeroMQ socket for data stream */
+    zmq::socket_t zmq_socket_;
+    /** Thread for handling data stream socket */
+    boost::shared_ptr<boost::thread> rx_thread_;
+    /** Mutex used to make this class thread safe */
+    boost::recursive_mutex mutex_;
     /** Pointer to logger */
     LoggerPtr logger_;
   };
