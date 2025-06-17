@@ -11,6 +11,9 @@
 namespace FrameProcessor
 {
 
+  const std::string JungfrauProcessPlugin::CONFIG_ENDPOINT = "endpoint";
+  const std::string JungfrauProcessPlugin::CONFIG_PERSISTENT_FILES = "persistent_files";
+
   /**
    * Constuctor - with member initialiser list
    */
@@ -38,6 +41,49 @@ namespace FrameProcessor
     rx_thread_.reset();
   }
 
+  /** Handle configuration requests
+   *
+   * @param config - Configuration message
+   * @param reply - Reply message that will be sent back to client
+   */
+  void JungfrauProcessPlugin::configure(OdinData::IpcMessage &config, OdinData::IpcMessage &reply)
+  {
+    // Protect this method
+    boost::lock_guard<boost::recursive_mutex> lock(mutex_);
+
+    if (config.has_param(JungfrauProcessPlugin::CONFIG_ENDPOINT) && this->endpoint_.empty())
+    {
+      this->endpoint_ = config.get_param<std::string>(JungfrauProcessPlugin::CONFIG_ENDPOINT);
+
+      try
+      {
+        this->zmq_socket_.connect(this->endpoint_.c_str());
+      }
+      catch (zmq::error_t &e)
+      {
+        LOG4CXX_ERROR(logger_, "Failed to connect to " << this->endpoint_ << ": " << e.what());
+        return;
+      }
+
+      rx_thread_ = boost::shared_ptr<boost::thread>(
+          new boost::thread(boost::bind(&JungfrauProcessPlugin::handle_rx_socket, this)));
+    }
+
+    // ####### Needed?
+    ''' if (config.has_param(JungfrauProcessPlugin::CONFIG_PERSISTENT_FILES))
+    {
+      this->persistent_files_ = config.get_param<bool>(JungfrauProcessPlugin::CONFIG_PERSISTENT_FILES);
+      if (this->persistent_files_)
+      {
+        LOG4CXX_INFO(logger_, "Persistent files enabled");
+      }
+      else
+      {
+        LOG4CXX_INFO(logger_, "Persistent files disabled");
+      }
+    }
+    '''
+  }
   }
 
   /**
