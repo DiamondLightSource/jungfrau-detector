@@ -12,13 +12,20 @@ namespace FrameProcessor
 {
 
   /**
-   * Constuctor
+   * Constuctor - with member initialiser list
    */
-  JungfrauProcessPlugin::JungfrauProcessPlugin()
+  JungfrauProcessPlugin::JungfrauProcessPlugin() : zmq_context_(),
+                                                   zmq_socket_(zmq_context_, ZMQ_PULL),
+                                                   persistent_files_(false),
+                                                   dropped_frames_(0)
   {
     // Setup logging for the class
     logger_ = Logger::getLogger("FP.JungfrauProcessPlugin");
     logger_->setLevel(Level::getAll());
+
+    int hwm = 10000;
+    zmq_socket_.setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
+
     LOG4CXX_TRACE(logger_, "JungfrauProcessPlugin constructor.");
   }
 
@@ -27,6 +34,10 @@ namespace FrameProcessor
    */
   JungfrauProcessPlugin::~JungfrauProcessPlugin()
   {
+    rx_thread_->join();
+    rx_thread_.reset();
+  }
+
   }
 
   /**
