@@ -19,6 +19,16 @@ using namespace log4cxx::helpers;
 #include "ClassLoader.h"
 #include "JungfrauDefinitions.h"
 #include <stdint.h>
+struct Jungfrau_Message
+{
+  int frame_index;
+  int row;
+  int column;
+  std::vector<int> shape; // Assuming shape is an array of ints
+  int bit_mode;
+  float exp_length;
+  int acquisition_num;
+};
 
 namespace FrameProcessor
 {
