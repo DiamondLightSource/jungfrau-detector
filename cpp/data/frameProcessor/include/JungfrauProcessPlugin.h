@@ -30,6 +30,7 @@ struct Jungfrau_Message
   int bit_mode;
   float exp_length;
   int acquisition_num;
+  std::vector<std::byte> compressed_data;
 };
 
 namespace FrameProcessor

@@ -7,6 +7,8 @@
 
 #include <JungfrauProcessPlugin.h>
 #include "Json.h"
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
 
 namespace FrameProcessor
 {
@@ -85,17 +87,55 @@ namespace FrameProcessor
     '''
   }
 
+  // Parse the received ZMQ multipart message and extract its contents into a Jungfrau_Message struct
+  Jungfrau_Message JungfrauProcessPlugin::parse_and_extract(zmq::multipart_t &buffer_multipart_msg)
+  {
+    // Write out the first part of the multipart message (the JSON header) as a string
+    std::string json_header(static_cast<char *>(buffer_multipart_msg.at(0).data()), buffer_multipart_msg.at(0).size());
+
+    // Create a rapidjson document and parse the header
+    rapidjson::Document rapidjson_doc;
+    rapidjson_doc.Parse(json_header.c_str());
+    if (rapidjson_doc.HasParseError())
+    {
+      throw std::runtime_error("Failed to parse JSON header");
+    }
+
+    // Populate the Jungfrau_Message struct
+    Jungfrau_Message message;
+    message.frame_index = rapidjson_doc["frameIndex"].GetInt();
+    message.row = rapidjson_doc["row"].GetInt();
+    message.column = rapidjson_doc["column"].GetInt();
+    // For each value in the shape array, add it to the shape vector in the message struct
+    const rapidjson::Value::ConstArray &shape_array = rapidjson_document["shape"].GetArray();
+    for (rapidjson::Value::ConstValueIterator itr = shape_array.Begin(); itr != shape_array.End(); ++itr)
+    {
+      const rapidjson::Value &shape_value = *itr;
+      message.shape.push_back(shape_value.GetInt());
+    }
+    message.bit_mode = rapidjson_doc["bitmode"].GetInt();
+    message.exp_length = rapidjson_doc["expLength"].GetFloat();
+    message.acquisition_num = rapidjson_doc["acquisition"].GetInt();
+
+    // Include the second part of the multipart message (the compressed data)
+    size_t compressed_data_size = buffer_multipart_msg.at(1).size();
+    const std::byte *byte_ptr = static_cast<const std::byte *>(buffer_multipart_msg.at(1).data());
+    message.compressed_data.assign(byte_ptr, byte_ptr + compressed_data_size);
+
+    return message;
+  }
+
   // Listen on ZMQ channel for detector data
   void JungfrauProcessPlugin::handle_rx_socket()
   {
     LOG4CXX_INFO(logger_, "Connected to " << this->endpoint_ << " - Listening...");
 
-    // Declare a ZMQ message object (Used to receive or send a message over a ZMQ socket)
+    // Declare a ZMQ message object to receive a message over a ZMQ socket
     // and a structure to describe the socket to be polled
     // First 0 = Polling socket and not file descriptor
     // ZMQ_POLLIN makes it follow readable events
     // Last 0 = Initialise revents (returned events) to zero
-    zmq::message_t buffer_message;
+    zmq::multipart_t buffer_multipart_msg;
     zmq::pollitem_t items[] = {{this->zmq_socket_, 0, ZMQ_POLLIN, 0}};
 
     while (this->isWorking())
@@ -108,38 +148,12 @@ namespace FrameProcessor
       }
 
       // Message found on socket
-      zmq_socket_.recv(&buffer_message);
+      buffer_multipart_msg.recv(zmq_socket_);
+      Jungfrau_Message message = parse_and_extract(buffer_multipart_msg);
       LOG4CXX_DEBUG_LEVEL(1, logger_, "Received data message");
-
-      struct Jungfrau_Message *message;
-      const uint8_t *buffer_message_ptr = (const uint8_t *)buffer_message.data();
-      // #####################
-      // stream2_result error = stream2_parse_msg(buffer_message_ptr, buffer_message.size(), &message);
-      // if (error)
-      // {
-      //   LOG4CXX_ERROR(logger_, "parse_msg returned error code " << (int)error);
-      //   continue;
-      // }
-
-      // switch (message->type)
-      // {
-      // case STREAM2_MSG_START:
-      //   handle_start_msg((struct stream2_start_msg *)message, buffer_message);
-      //   break;
-      // case STREAM2_MSG_IMAGE:
-      //   handle_image_msg((struct stream2_image_msg *)message, buffer_message);
-      //   break;
-      // case STREAM2_MSG_END:
-      //   handle_end_msg((struct stream2_end_msg *)message, buffer_message);
-      //   break;
-      // }
-      // #######################
-
-      stream2_free_msg(message);
     }
 
     LOG4CXX_INFO(logger_, "Shutting down");
-  }
   }
 
   /**
