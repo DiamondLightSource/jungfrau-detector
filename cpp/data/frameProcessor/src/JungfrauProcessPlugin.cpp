@@ -101,24 +101,26 @@ namespace FrameProcessor
       throw std::runtime_error("Failed to parse JSON header");
     }
 
-    // Populate the Jungfrau_Message struct
-    Jungfrau_Message message;
-    message.frame_index = rapidjson_doc["frameIndex"].GetInt();
-    message.row = rapidjson_doc["row"].GetInt();
-    message.column = rapidjson_doc["column"].GetInt();
-    // For each value in the shape array, add it to the shape vector in the message struct
+    FrameMetaData frame_meta_data;
+
+    frame_meta_data.set_frame_number(static_cast<long long>(rapidjson_doc["frameIndex"].GetInt()));
+    frame_meta_data.set_dataset_name("data");
+    frame_meta_data.set_data_type(raw_16bit);
+    frame_meta_data.set_acquisition_ID(std::to_string(rapidjson_doc["acquisition"].GetInt()));
+
     const rapidjson::Value::ConstArray &shape_array = rapidjson_document["shape"].GetArray();
-    for (rapidjson::Value::ConstValueIterator itr = shape_array.Begin(); itr != shape_array.End(); ++itr)
-    {
-      const rapidjson::Value &shape_value = *itr;
-      message.shape.push_back(shape_value.GetInt());
-    }
-    message.bit_mode = rapidjson_doc["bitmode"].GetInt();
-    message.exp_length = rapidjson_doc["expLength"].GetFloat();
-    message.acquisition_num = rapidjson_doc["acquisition"].GetInt();
+    dimensions_t dims = {
+        static_cast<dimsize_t>(shape_array[0].GetUint64()),
+        static_cast<dimsize_t>(shape_array[1].GetUint64())};
+    frame_meta_data.set_dimensions(dims);
+
+    frame_meta_data.set_compression_type(bslz4);
 
     // Include the second part of the multipart message (the compressed data)
     size_t compressed_data_size = buffer_multipart_msg.at(1).size();
+
+    Frame frame(frame_meta_data, compressed_data_size, 0);
+
     const std::byte *byte_ptr = static_cast<const std::byte *>(buffer_multipart_msg.at(1).data());
     message.compressed_data.assign(byte_ptr, byte_ptr + compressed_data_size);
 
@@ -130,8 +132,9 @@ namespace FrameProcessor
   {
     LOG4CXX_INFO(logger_, "Connected to " << this->endpoint_ << " - Listening...");
 
-    // Declare a ZMQ message object to receive a message over a ZMQ socket
-    // and a structure to describe the socket to be polled
+    // Declare a ZMQ message object to receive a message over a ZMQ socket,
+    // and also a structure to describe the socket to be polled
+    //
     // First 0 = Polling socket and not file descriptor
     // ZMQ_POLLIN makes it follow readable events
     // Last 0 = Initialise revents (returned events) to zero

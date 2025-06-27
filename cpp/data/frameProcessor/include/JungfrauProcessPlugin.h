@@ -21,6 +21,7 @@ using namespace log4cxx::helpers;
 #include "ClassLoader.h"
 #include "JungfrauDefinitions.h"
 #include <stdint.h>
+
 struct Jungfrau_Message
 {
   int frame_index;
@@ -63,7 +64,7 @@ namespace FrameProcessor
   private:
     /** Handle data stream socket */
     void handle_rx_socket();
-    // void process_frame(boost::shared_ptr<Frame> frame);
+    void process_frame(boost::shared_ptr<Frame> frame);
     // void setFrameEncoding(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
     // void setFrameDataType(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
     // void setFrameDimensions(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
