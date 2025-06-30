@@ -1,8 +1,8 @@
 /*
  * JungfrauProcessPlugin.h
  *
- *  Created on: 8 May 2017
- *      Author: Matt Taylor
+ *  Created on: 30 June 2025
+ *      Author: James O'Hea
  */
 
 #ifndef TOOLS_FILEWRITER_JUNGFRAUPROCESSPLUGIN_H_
@@ -46,7 +46,7 @@ namespace FrameProcessor
   /** Processing of Jungfrau Frame objects.
    *
    * The JungfrauProcessPlugin class is responsible for receiving a raw data
-   * Frame object and parsing the header information. Depending on the frame type, it
+   * zmq messages and parsing the header information. Depending on the frame type, it
    * sends raw image data on down the chain, or sends meta data out to subscribers.
    */
   class JungfrauProcessPlugin : public FrameProcessorPlugin

@@ -1,20 +1,17 @@
 /*
  * JungfrauProcessPlugin.cpp
  *
- *  Created on: 8 May 2017
- *      Author: Matt Taylor
+ *  Created on: 30 June 2025
+ *      Author: James O'Hea
  */
 
 #include <JungfrauProcessPlugin.h>
-#include "Json.h"
-#include <rapidjson/document.h>
-#include <rapidjson/error/en.h>
 
 namespace FrameProcessor
 {
 
   const std::string JungfrauProcessPlugin::CONFIG_ENDPOINT = "endpoint";
-  const std::string JungfrauProcessPlugin::CONFIG_PERSISTENT_FILES = "persistent_files";
+    // const std::string JungfrauProcessPlugin::CONFIG_PERSISTENT_FILES = "persistent_files";
 
   /**
    * Constuctor - with member initialiser list
@@ -28,6 +25,7 @@ namespace FrameProcessor
     logger_ = Logger::getLogger("FP.JungfrauProcessPlugin");
     logger_->setLevel(Level::getAll());
 
+        // zmq config, including high water mark
     int hwm = 10000;
     zmq_socket_.setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
 
@@ -41,6 +39,7 @@ namespace FrameProcessor
   {
     rx_thread_->join();
     rx_thread_.reset();
+        LOG4CXX_TRACE(logger_, "ExcaliburProcessPlugin destructor.");
   }
 
   /** Handle configuration requests
@@ -132,8 +131,7 @@ namespace FrameProcessor
   {
     LOG4CXX_INFO(logger_, "Connected to " << this->endpoint_ << " - Listening...");
 
-    // Declare a ZMQ message object to receive a message over a ZMQ socket,
-    // and also a structure to describe the socket to be polled
+        // items is a structure to describe the socket to be polled
     //
     // First 0 = Polling socket and not file descriptor
     // ZMQ_POLLIN makes it follow readable events
