@@ -410,27 +410,27 @@ namespace FrameProcessor
 
   int JungfrauProcessPlugin::get_version_major()
   {
-    return EIGER_DETECTOR_VERSION_MAJOR;
+        return JUNGFRAU_DETECTOR_VERSION_MAJOR;
   }
 
   int JungfrauProcessPlugin::get_version_minor()
   {
-    return EIGER_DETECTOR_VERSION_MINOR;
+        return JUNGFRAU_DETECTOR_VERSION_MINOR;
   }
 
   int JungfrauProcessPlugin::get_version_patch()
   {
-    return EIGER_DETECTOR_VERSION_PATCH;
+        return JUNGFRAU_DETECTOR_VERSION_PATCH;
   }
 
   std::string JungfrauProcessPlugin::get_version_short()
   {
-    return EIGER_DETECTOR_VERSION_STR_SHORT;
+        return JUNGFRAU_DETECTOR_VERSION_STR_SHORT;
   }
 
   std::string JungfrauProcessPlugin::get_version_long()
   {
-    return EIGER_DETECTOR_VERSION_STR;
+        return JUNGFRAU_DETECTOR_VERSION_STR;
   }
 
 } /* namespace FrameProcessor */
