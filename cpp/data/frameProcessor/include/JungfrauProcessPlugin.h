@@ -19,20 +19,9 @@ using namespace log4cxx::helpers;
 
 #include "FrameProcessorPlugin.h"
 #include "ClassLoader.h"
+#include "DataBlockFrame.h"
 #include "JungfrauDefinitions.h"
 #include <stdint.h>
-
-struct Jungfrau_Message
-{
-  int frame_index;
-  int row;
-  int column;
-  std::vector<int> shape; // Assuming shape is an array of ints
-  int bit_mode;
-  float exp_length;
-  int acquisition_num;
-  std::vector<std::byte> compressed_data;
-};
 
 namespace FrameProcessor
 {
@@ -64,10 +53,7 @@ namespace FrameProcessor
   private:
     /** Handle data stream socket */
     void handle_rx_socket();
-    void process_frame(boost::shared_ptr<Frame> frame);
-    // void setFrameEncoding(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
-    // void setFrameDataType(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
-    // void setFrameDimensions(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr);
+
     /** Data stream endpoint to connect to */
     std::string endpoint_;
     /** ZeroMQ context */
@@ -78,8 +64,20 @@ namespace FrameProcessor
     boost::shared_ptr<boost::thread> rx_thread_;
     /** Mutex used to make this class thread safe */
     boost::recursive_mutex mutex_;
+    /** Flag to determine if files shold be kept persistently or removed when processing is completed */
+    bool persistent_files_;
+    /** Frames dropped when failing to allocating memory */
+    uint64_t dropped_frames_;
+
     /** Pointer to logger */
     LoggerPtr logger_;
+
+    static const std::string CONFIG_ENDPOINT;
+
+    boost::shared_ptr<Frame> JungfrauProcessPlugin::create_data_frame(zmq::message_t &meta_data_part, zmq::message_t &data_part);
+
+    /** Parent class methods */
+    void configure(OdinData::IpcMessage &config, OdinData::IpcMessage &reply);
   };
 
   /**
