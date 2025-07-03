@@ -78,6 +78,8 @@ namespace FrameProcessor
 
     /** Parent class methods */
     void configure(OdinData::IpcMessage &config, OdinData::IpcMessage &reply);
+    /** `process_frame` should not be called as the data is received directly from a socket */
+    void process_frame(boost::shared_ptr<Frame> frame);
   };
 
   /**

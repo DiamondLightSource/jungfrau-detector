@@ -42,6 +42,11 @@ namespace FrameProcessor
         LOG4CXX_TRACE(logger_, "ExcaliburProcessPlugin destructor.");
     }
 
+    void JungfrauProcessPlugin::process_frame(boost::shared_ptr<Frame> frame)
+    {
+        LOG4CXX_ERROR(logger_, "JungfrauProcessPlugin::process_frame should not be called");
+    }
+
     /** Handle configuration requests
      *
      * @param config - Configuration message
