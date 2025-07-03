@@ -74,7 +74,7 @@ namespace FrameProcessor
 
     static const std::string CONFIG_ENDPOINT;
 
-    boost::shared_ptr<Frame> JungfrauProcessPlugin::create_data_frame(zmq::message_t &meta_data_part, zmq::message_t &data_part);
+    boost::shared_ptr<Frame> create_data_frame(zmq::message_t &meta_data_part, zmq::message_t &data_part);
 
     /** Parent class methods */
     void configure(OdinData::IpcMessage &config, OdinData::IpcMessage &reply);
