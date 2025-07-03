@@ -126,7 +126,7 @@ namespace FrameProcessor
         }
 
         // Fetch the meta data from the message
-        // and stuff it intp a FrameMetaData object
+        // and stuff it into a FrameMetaData object
         FrameMetaData frame_meta_data;
         frame_meta_data.set_frame_number(static_cast<long long>(rapidjson_doc["frameIndex"].GetInt()));
         frame_meta_data.set_dataset_name("data");
@@ -145,7 +145,7 @@ namespace FrameProcessor
         const std::byte *byte_ptr = static_cast<const std::byte *>(data_part.data());
 
         // Construct a new data block frame
-        boost::shared_ptr<Frame> data_block_frame = boost::shared_ptr<Frame>(new DataBlockFrame(frame_meta_data, compressed_data_size));
+        boost::shared_ptr<Frame> data_block_frame = boost::shared_ptr<Frame>(new DataBlockFrame(frame_meta_data, byte_ptr, compressed_data_size, 0));
 
         return data_block_frame;
     }
