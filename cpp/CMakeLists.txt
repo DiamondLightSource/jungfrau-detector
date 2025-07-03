@@ -1,5 +1,5 @@
-# Require CMake version >=2.8
-cmake_minimum_required(VERSION 2.8)
+# Require CMake version >=3.5
+cmake_minimum_required(VERSION 3.5)
 
 # Project name
 project(JungfrauDetector)
