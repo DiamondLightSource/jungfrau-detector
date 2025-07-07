@@ -1,4 +1,4 @@
-FROM ghcr.io/odin-detector/odin-data-build:1.10.1-fastcs-dev3 AS developer
+FROM ghcr.io/odin-detector/odin-data-build:1.11.0 AS developer
 
 FROM developer AS build
 
@@ -15,7 +15,7 @@ RUN mkdir -p build && cd build && \
 # Python
 WORKDIR /odin/jungfrau-detector/python
 
-FROM ghcr.io/odin-detector/odin-data-runtime:1.10.1-fastcs-dev3 AS runtime
+FROM ghcr.io/odin-detector/odin-data-runtime:1.11.0 AS runtime
 
 COPY --from=build /odin /odin
 COPY --from=build /venv /venv
