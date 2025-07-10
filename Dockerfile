@@ -49,7 +49,7 @@ FROM ghcr.io/odin-detector/odin-data-runtime:1.11.0 AS runtime
 COPY --from=build /odin /odin
 COPY --from=build /venv /venv
 COPY --from=build /slsDetector /slsDetector
-COPY deploy /odin/jungfrau-deploy
+#COPY deploy /odin/jungfrau-deploy
 
 RUN rm -rf /odin/jungfrau-detector
 
