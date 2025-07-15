@@ -12,6 +12,10 @@ RUN mkdir -p build && cd build && \
     make -j8 VERBOSE=1 && \
     make install
 
+# Python
+WORKDIR /odin/jungfrau-detector/python
+RUN python -m pip install .
+
 # # slsDetectorPackage
 
 # # Set environment variables
