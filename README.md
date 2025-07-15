@@ -2,8 +2,8 @@
 
 Data acquisition framework for the Jungfrau detector using [odin-data] consisting of:
 
-- EigerMetaWriter: A plugin for the odin-data meta_writer application
-- EigerProcessPlugin: A plugin for the odin-data FrameProcessor
+- JungfrauMetaWriter: A plugin for the odin-data meta_writer application
+- JungfrauProcessPlugin: A plugin for the odin-data FrameProcessor
 
 ## Development
 
@@ -27,11 +27,9 @@ make sure vscode user settings have `cmake.cmakePath` set to `cmake` (the defaul
 
     ii. `> CMake: Install`
 
-4. Install the jungfrau-detector python package with dev dependencies and tickit simulator
+4. Install the jungfrau-detector python package with dev dependencies
 
-    i. `$ pip install -e './python[dev,sim]'`
-
-5. Run the dev deployment from the `deploy` directory with `$ zellij -l layout.kdl`
+    i. `$ pip install -e './python[dev]'`
 
 It is then possible to edit the python applications and restart, or edit the C++
 applications, rebuild and restart.
