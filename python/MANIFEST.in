@@ -1,0 +1,3 @@
+include versioneer.py
+        include src /
+    jungfrau_detector / _version.py
