@@ -41,13 +41,13 @@ full deployment.
 
 ## Related Projects
 
-- [fastcs-odin]: An EPICS driver to control the odin-data / eiger-detector applications
-- [fastcs-eiger]: An EPICS driver to control Eiger detectors
+- [fastcs-odin]: An EPICS driver to control the odin-data / jungfrau-detector applications
+- [fastcs-jungfrau]: An EPICS driver to control Jungfrau detectors
 - [tickit-devices]: A set of simulated devices, including Eiger
 
 [odin-data]: https://github.com/odin-detector/odin-data
 [fastcs-odin]: https://github.com/DiamondLightSource/fastcs-odin
-[fastcs-eiger]: https://github.com/DiamondLightSource/fastcs-eiger
+[fastcs-jungfrau]: https://github.com/DiamondLightSource/fastcs-jungfrau
 [tickit-devices]: https://github.com/DiamondLightSource/tickit-devices
 [devcontainer]: https://code.visualstudio.com/docs/devcontainers/containers
 [launch-config]: https://code.visualstudio.com/docs/editor/debugging
