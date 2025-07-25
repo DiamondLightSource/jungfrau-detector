@@ -134,7 +134,7 @@ namespace FrameProcessor
         // Fetch the meta data from the message
         // and stuff it into a FrameMetaData object
         FrameMetaData frame_meta_data;
-        frame_meta_data.set_frame_number(static_cast<long long>(rapidjson_doc["frameIndex"].GetInt()));
+        frame_meta_data.set_frame_number(static_cast<uint64_t>(rapidjson_doc["frameIndex"].GetUint64()));
         frame_meta_data.set_dataset_name("data");
         frame_meta_data.set_data_type(raw_16bit);
         frame_meta_data.set_acquisition_ID(std::to_string(rapidjson_doc["acquisition"].GetInt()));
@@ -152,16 +152,16 @@ namespace FrameProcessor
 
         // Construct a json dict of meta data...
         OdinData::JsonDict json;
-        json.add("frame_index", static_cast<long long>(rapidjson_doc["frameIndex"].GetInt()));
-        json.add("row", static_cast<long long>(rapidjson_doc["row"].GetInt()));
-        json.add("column", static_cast<long long>(rapidjson_doc["column"].GetInt()));
-        std::vector<long long> shape_vector;
-        shape_vector.push_back(static_cast<long long>(shape_array[0].GetUint()));
-        shape_vector.push_back(static_cast<long long>(shape_array[1].GetUint()));
+        json.add("frame_index", static_cast<uint64_t>(rapidjson_doc["frameIndex"].GetUint64()));
+        json.add("row", static_cast<int32_t>(rapidjson_doc["row"].GetInt()));
+        json.add("column", static_cast<int32_t>(rapidjson_doc["column"].GetInt()));
+        std::vector<uint32_t> shape_vector;
+        shape_vector.push_back(static_cast<uint32_t>(shape_array[0].GetUint()));
+        shape_vector.push_back(static_cast<uint32_t>(shape_array[1].GetUint()));
         json.add("shape", shape_vector);
-        json.add("bit_mode", static_cast<long long>(rapidjson_doc["bitmode"].GetInt()));
-        json.add("exp_length", static_cast<long long>(rapidjson_doc["expLength"].GetInt()));
-        json.add("acquisition", static_cast<long long>(rapidjson_doc["acquisition"].GetInt()));
+        json.add("bit_mode", static_cast<int32_t>(rapidjson_doc["bitmode"].GetInt()));
+        json.add("exp_length", static_cast<uint32_t>(rapidjson_doc["expLength"].GetUint()));
+        json.add("acquisition", static_cast<uint64_t>(rapidjson_doc["acquisition"].GetUint64()));
 
         // ...and pass it to the Meta Writer
         this->publish_meta(get_name(), "jungfrau-imagedata", json.str(), json.str());
