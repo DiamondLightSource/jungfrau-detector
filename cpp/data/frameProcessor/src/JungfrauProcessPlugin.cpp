@@ -6,6 +6,7 @@
  */
 
 #include <JungfrauProcessPlugin.h>
+#include <Json.h>
 
 namespace FrameProcessor
 {
@@ -148,6 +149,22 @@ namespace FrameProcessor
         // Include the second part of the multipart message (the compressed data)
         size_t compressed_data_size = data_part.size();
         const std::byte *byte_ptr = static_cast<const std::byte *>(data_part.data());
+
+        // Construct a json dict of meta data...
+        OdinData::JsonDict json;
+        json.add("frame_index", static_cast<long long>(rapidjson_doc["frameIndex"].GetInt()));
+        json.add("row", static_cast<long long>(rapidjson_doc["row"].GetInt()));
+        json.add("column", static_cast<long long>(rapidjson_doc["column"].GetInt()));
+        std::vector<long long> shape_vector;
+        shape_vector.push_back(static_cast<long long>(shape_array[0].GetUint()));
+        shape_vector.push_back(static_cast<long long>(shape_array[1].GetUint()));
+        json.add("shape", shape_vector);
+        json.add("bit_mode", static_cast<long long>(rapidjson_doc["bitmode"].GetInt()));
+        json.add("exp_length", static_cast<long long>(rapidjson_doc["expLength"].GetInt()));
+        json.add("acquisition", static_cast<long long>(rapidjson_doc["acquisition"].GetInt()));
+
+        // ...and pass it to the Meta Writer
+        this->publish_meta(get_name(), "jungfrau-imagedata", json.str(), json.str());
 
         // Construct a new data block frame
         boost::shared_ptr<Frame> data_block_frame = boost::shared_ptr<Frame>(new DataBlockFrame(frame_meta_data, byte_ptr, compressed_data_size, 0));
