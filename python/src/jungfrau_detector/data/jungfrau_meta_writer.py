@@ -91,19 +91,20 @@ class JungfrauMetaWriter(MetaWriter):
             offset = self._frame_offset_map.pop(data[FRAME_INDEX])
             self._add_values(self.DETECTOR_WRITE_FRAME_PARAMETERS, data, offset)
 
-            # If the first frame
-            if data[FRAME_INDEX] == 0:
-                self._write_dataset(ROW, header[ROW])
-                self._write_dataset(COLUMN, header[COLUMN])
-                self._write_dataset(SHAPE, header[SHAPE])
-                self._write_dataset(BIT_MODE, header[BIT_MODE])
-                self._write_dataset(EXP_LENGTH, header[EXP_LENGTH])
-                self._write_dataset(ACQUISITION, header[ACQUISITION])
         else:
             # Store this to be written in write_detector_frame_data
             # This will be called when handle_write_frame is called in the
             # base class with this frame number
             self._frame_data_map[data[FRAME_INDEX]] = data
+
+        # If the first frame
+        if data[FRAME_INDEX] == 0:
+            self._write_dataset(ROW, header[ROW])
+            self._write_dataset(COLUMN, header[COLUMN])
+            self._write_dataset(SHAPE, header[SHAPE])
+            self._write_dataset(BIT_MODE, header[BIT_MODE])
+            self._write_dataset(EXP_LENGTH, header[EXP_LENGTH])
+            self._write_dataset(ACQUISITION, header[ACQUISITION])
 
     @staticmethod
     def get_version():
