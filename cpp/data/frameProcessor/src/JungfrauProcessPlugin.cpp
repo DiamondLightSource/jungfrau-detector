@@ -11,7 +11,7 @@
 namespace FrameProcessor
 {
     /**
-     * Constuctor - with member initialiser list
+     * Constructor - with member initializer list
      */
     JungfrauProcessPlugin::JungfrauProcessPlugin() : zmq_context_(),
                                                      zmq_socket_(zmq_context_, ZMQ_PULL),
@@ -32,7 +32,7 @@ namespace FrameProcessor
     JungfrauProcessPlugin::~JungfrauProcessPlugin()
     {
         rx_thread_.join();
-        LOG4CXX_TRACE(Logger::getLogger("FP.JungfrauProcessPlugin"), "ExcaliburProcessPlugin destructor.");
+        LOG4CXX_TRACE(Logger::getLogger("FP.JungfrauProcessPlugin"), "JungfrauProcessPlugin destructor.");
     }
 
     void JungfrauProcessPlugin::process_frame(boost::shared_ptr<Frame> frame)
