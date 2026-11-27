@@ -15,6 +15,8 @@
 using namespace log4cxx;
 using namespace log4cxx::helpers;
 
+#include <thread>
+
 #include "zmq/zmq.hpp"
 
 #include "FrameProcessorPlugin.h"
@@ -54,30 +56,26 @@ namespace FrameProcessor
     /** Handle data stream socket */
     void handle_rx_socket();
 
-    /** Data stream endpoint to connect to */
-    std::string endpoint_;
-    /** ZeroMQ context */
-    zmq::context_t zmq_context_;
-    /** ZeroMQ socket for data stream */
-    zmq::socket_t zmq_socket_;
-    /** Thread for handling data stream socket */
-    boost::shared_ptr<boost::thread> rx_thread_;
-    /** Mutex used to make this class thread safe */
-    boost::recursive_mutex mutex_;
-    /** Flag to determine if files shold be kept persistently or removed when processing is completed */
-    bool persistent_files_;
     /** Frames dropped when failing to allocating memory */
     uint64_t dropped_frames_;
+    /** Data stream endpoint to connect to */
+    std::string endpoint_;
+    /** ZeroMQ socket for data stream */
+    zmq::socket_t zmq_socket_;
+    /** ZeroMQ context */
+    zmq::context_t zmq_context_;
+    /** Thread for handling data stream socket */
+    std::thread rx_thread_;
 
-    /** Pointer to logger */
-    LoggerPtr logger_;
-
-    static const std::string CONFIG_ENDPOINT;
+    static inline const std::string CONFIG_ENDPOINT = "endpoint";
+    static inline const std::string STATUS_DROPPED_FRAMES = "dropped_frames";
 
     boost::shared_ptr<Frame> create_data_frame(zmq::message_t &meta_data_part, zmq::message_t &data_part);
 
     /** Parent class methods */
     void configure(OdinData::IpcMessage &config, OdinData::IpcMessage &reply);
+    void status(OdinData::IpcMessage &status);
+    bool reset_statistics();
     /** `process_frame` should not be called as the data is received directly from a socket */
     void process_frame(boost::shared_ptr<Frame> frame);
   };
