@@ -1,306 +1,211 @@
 /*
  * JungfrauProcessPlugin.cpp
  *
- *  Created on: 8 May 2017
- *      Author: Matt Taylor
+ *  Created on: 30 June 2025
+ *      Author: James O'Hea
  */
-
+#include <inttypes.h>
 #include <JungfrauProcessPlugin.h>
-#include "Json.h"
+#include <Json.h>
 
 namespace FrameProcessor
 {
-
-  /**
-   * Constuctor
-   */
-  JungfrauProcessPlugin::JungfrauProcessPlugin()
-  {
-    // Setup logging for the class
-    logger_ = Logger::getLogger("FP.JungfrauProcessPlugin");
-    logger_->setLevel(Level::getAll());
-    LOG4CXX_TRACE(logger_, "JungfrauProcessPlugin constructor.");
-  }
-
-  /**
-   * Destructor
-   */
-  JungfrauProcessPlugin::~JungfrauProcessPlugin()
-  {
-  }
-
-  /**
-   * Processes a frame
-   *
-   * \param[in] frame The frame to process
-   */
-  void JungfrauProcessPlugin::process_frame(boost::shared_ptr<Frame> frame)
-  {
-    const Jungfrau::FrameHeader *hdrPtr = static_cast<const Jungfrau::FrameHeader *>(frame->get_image_ptr());
-
-    LOG4CXX_TRACE(logger_, "FrameHeader frame currentMessageType: " << hdrPtr->messageType);
-    LOG4CXX_TRACE(logger_, "FrameHeader frame series: " << hdrPtr->series);
-    LOG4CXX_TRACE(logger_, "FrameHeader frame number: " << hdrPtr->frame_number);
-    LOG4CXX_TRACE(logger_, "FrameHeader frame shapeSizeX: " << hdrPtr->shapeSizeX);
-    LOG4CXX_TRACE(logger_, "FrameHeader frame shapeSizeY: " << hdrPtr->shapeSizeY);
-    LOG4CXX_TRACE(logger_, "FrameHeader frame shapeSizeZ: " << hdrPtr->shapeSizeZ);
-    LOG4CXX_TRACE(logger_, "FrameHeader frame startTime: " << hdrPtr->startTime);
-    LOG4CXX_TRACE(logger_, "FrameHeader frame stopTime: " << hdrPtr->stopTime);
-    LOG4CXX_TRACE(logger_, "FrameHeader frame realTime: " << hdrPtr->realTime);
-    LOG4CXX_TRACE(logger_, "FrameHeader frame blob_size: " << hdrPtr->data_size);
-    LOG4CXX_TRACE(logger_, "FrameHeader frame data type: " << hdrPtr->dataType);
-    LOG4CXX_TRACE(logger_, "FrameHeader frame encoding: " << hdrPtr->encoding);
-    LOG4CXX_TRACE(logger_, "FrameHeader frame acquisition ID: " << hdrPtr->acquisitionID);
-
-    // Create status message header
-
-    // Add Acquisition ID
-    std::string acqIDString(hdrPtr->acquisitionID);
-    OdinData::JsonDict json;
-    json.add("acqID", acqIDString);
-
-    if (hdrPtr->messageType == Jungfrau::IMAGE_DATA)
+    /**
+     * Constructor - with member initializer list
+     */
+    JungfrauProcessPlugin::JungfrauProcessPlugin() : zmq_context_(),
+                                                     zmq_socket_(zmq_context_, ZMQ_PULL),
+                                                     dropped_frames_(0)
     {
-      frame->set_image_offset(sizeof(Jungfrau::FrameHeader));
-      frame->set_image_size(hdrPtr->data_size);
+        // zmq config, including high water mark
+        int hwm = 10000;
+        zmq_socket_.setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
+        add_config_param_metadata(JungfrauProcessPlugin::CONFIG_ENDPOINT, PMDD::STRING_T, PMDA::READ_WRITE);
+        add_status_param_metadata(JungfrauProcessPlugin::STATUS_DROPPED_FRAMES, PMDD::UINT_T, PMDA::READ_ONLY, 0);
 
-      FrameMetaData frame_meta_data;
-
-      frame_meta_data.set_dataset_name("data");
-
-      setFrameEncoding(frame_meta_data, hdrPtr);
-      setFrameDataType(frame_meta_data, hdrPtr);
-      setFrameDimensions(frame_meta_data, hdrPtr);
-      frame_meta_data.set_acquisition_ID(hdrPtr->acquisitionID);
-
-      // Set the compressed_size parameter to the frame size
-      frame_meta_data.set_parameter("compressed_size", hdrPtr->data_size);
-
-      frame->set_meta_data(frame_meta_data);
-      frame->set_frame_number(hdrPtr->frame_number);
-
-      // Add Frame number
-      json.add("frame", hdrPtr->frame_number);
-
-      // Add Series number
-      json.add("series", hdrPtr->series);
-
-      // Add Size
-      json.add("size", hdrPtr->size_in_header);
-
-      // Add Start Time
-      json.add("start_time", hdrPtr->startTime);
-
-      // Add Stop Time
-      json.add("stop_time", hdrPtr->stopTime);
-
-      // Add Real Time
-      json.add("real_time", hdrPtr->realTime);
-
-      // Add shape
-      std::vector<uint32_t> shape;
-      shape.push_back(hdrPtr->shapeSizeX);
-      shape.push_back(hdrPtr->shapeSizeY);
-      json.add("shape", shape);
-
-      // Add data type
-      std::string dataTypeString(hdrPtr->dataType);
-      json.add("type", dataTypeString);
-
-      // Add encoding
-      std::string encodingString(hdrPtr->encoding);
-      json.add("encoding", encodingString);
-
-      // Add hash
-      std::string hashString(hdrPtr->hash);
-      json.add("hash", hashString);
-
-      publish_meta(get_name(), "jungfrau-imagedata", json.str(), json.str());
-
-      this->push(frame);
+        LOG4CXX_TRACE(Logger::getLogger("FP.JungfrauProcessPlugin"), "JungfrauProcessPlugin constructor.");
     }
-    else if (hdrPtr->messageType == Jungfrau::IMAGE_APPENDIX)
+
+    /**
+     * Destructor
+     */
+    JungfrauProcessPlugin::~JungfrauProcessPlugin()
     {
-      std::string dataString((static_cast<const char *>(frame->get_image_ptr()) + sizeof(Jungfrau::FrameHeader)), hdrPtr->data_size);
-
-      // Add Frame number
-      json.add("frame", hdrPtr->frame_number);
-
-      publish_meta(get_name(), "jungfrau-imageappendix", dataString, json.str());
+        rx_thread_.join();
+        LOG4CXX_TRACE(Logger::getLogger("FP.JungfrauProcessPlugin"), "JungfrauProcessPlugin destructor.");
     }
-    else if (hdrPtr->messageType == Jungfrau::GLOBAL_HEADER_NONE)
+
+    void JungfrauProcessPlugin::process_frame(boost::shared_ptr<Frame> frame)
     {
-      // Add Series number
-      json.add("series", hdrPtr->series);
-
-      publish_meta(get_name(), "jungfrau-globalnone", json.str(), json.str());
+        LOG4CXX_ERROR(Logger::getLogger("FP.JungfrauProcessPlugin"), "JungfrauProcessPlugin::process_frame should not be called");
     }
-    else if (hdrPtr->messageType == Jungfrau::GLOBAL_HEADER_CONFIG)
+
+    /** Handle configuration requests
+     *
+     * @param config - Configuration message
+     * @param reply - Reply message that will be sent back to client
+     */
+    void JungfrauProcessPlugin::configure(OdinData::IpcMessage &config, OdinData::IpcMessage &reply)
     {
-      std::string dataString((static_cast<const char *>(frame->get_image_ptr()) + sizeof(Jungfrau::FrameHeader)), hdrPtr->data_size);
+        if (config.has_param(JungfrauProcessPlugin::CONFIG_ENDPOINT) && this->endpoint_.empty())
+        {
+            this->endpoint_ = config.get_param<std::string>(JungfrauProcessPlugin::CONFIG_ENDPOINT);
 
-      // Add Series number
-      json.add("series", hdrPtr->series);
+            try
+            {
+                this->zmq_socket_.connect(this->endpoint_.c_str());
+            }
+            catch (zmq::error_t &e)
+            {
+                LOG4CXX_ERROR(Logger::getLogger("FP.JungfrauProcessPlugin"), "Failed to connect to " << this->endpoint_ << ": " << e.what());
+                return;
+            }
 
-      publish_meta(get_name(), "jungfrau-globalconfig", dataString, json.str());
+            rx_thread_ = std::thread([this](){ this->handle_rx_socket(); });
+        }
     }
-    else if (hdrPtr->messageType == Jungfrau::GLOBAL_HEADER_FLATFIELD)
+
+    /** Report status
+     *
+     * @param[out] status - Reference to an IpcMessage value to store the status
+     */
+    void JungfrauProcessPlugin::status(OdinData::IpcMessage &status)
     {
-      // Add shape
-      std::vector<uint32_t> shape;
-      shape.push_back(hdrPtr->shapeSizeX);
-      shape.push_back(hdrPtr->shapeSizeY);
-      json.add("shape", shape);
-
-      // Add data type
-      std::string dataTypeString(hdrPtr->dataType);
-      json.add("type", dataTypeString);
-
-      publish_meta(get_name(), "jungfrau-globalflatfield", reinterpret_cast<const void *>(static_cast<const char *>(frame->get_image_ptr()) + sizeof(Jungfrau::FrameHeader)), hdrPtr->data_size, json.str());
+        status.set_param(this->get_name() + '/' + STATUS_DROPPED_FRAMES, this->dropped_frames_);
     }
-    else if (hdrPtr->messageType == Jungfrau::GLOBAL_HEADER_MASK)
+
+    /** Reset dropped frames counter
+     *
+     * @returns True if reset was successful
+     */
+    bool JungfrauProcessPlugin::reset_statistics()
     {
-      // Add shape
-      std::vector<uint32_t> shape;
-      shape.push_back(hdrPtr->shapeSizeX);
-      shape.push_back(hdrPtr->shapeSizeY);
-      json.add("shape", shape);
-
-      // Add data type
-      std::string dataTypeString(hdrPtr->dataType);
-      json.add("type", dataTypeString);
-
-      publish_meta(get_name(), "jungfrau-globalmask", reinterpret_cast<const void *>(static_cast<const char *>(frame->get_image_ptr()) + sizeof(Jungfrau::FrameHeader)), hdrPtr->data_size, json.str());
+        this->dropped_frames_ = 0;
+        return true;
     }
-    else if (hdrPtr->messageType == Jungfrau::GLOBAL_HEADER_COUNTRATE)
+
+    // Listen on ZMQ channel for detector data
+    void JungfrauProcessPlugin::handle_rx_socket()
     {
-      // Add shape
-      std::vector<uint32_t> shape;
-      shape.push_back(hdrPtr->shapeSizeX);
-      shape.push_back(hdrPtr->shapeSizeY);
-      json.add("shape", shape);
+        LOG4CXX_INFO(Logger::getLogger("FP.JungfrauProcessPlugin"), "Connected to " << this->endpoint_ << " - Listening...");
 
-      // Add data type
-      std::string dataTypeString(hdrPtr->dataType);
-      json.add("type", dataTypeString);
+        // items is a structure to describe the socket to be polled
+        //
+        // First 0 = Polling socket and not file descriptor
+        // ZMQ_POLLIN makes it follow readable events
+        // Last 0 = Initialise revents (returned events) to zero
+        zmq::pollitem_t items[] = {{this->zmq_socket_, 0, ZMQ_POLLIN, 0}};
 
-      publish_meta(get_name(), "jungfrau-globalcountrate", reinterpret_cast<const void *>(static_cast<const char *>(frame->get_image_ptr()) + sizeof(Jungfrau::FrameHeader)), hdrPtr->data_size, json.str());
+        while (this->isWorking())
+        {
+            // Poll for 1000ms and skip loop if no messages were received (to check for shutdown)
+            zmq::poll(&items[0], 1, 1000);
+            if (!(items[0].revents & ZMQ_POLLIN))
+            {
+                continue;
+            }
+
+            // Message found on socket
+            LOG4CXX_DEBUG(Logger::getLogger("FP.JungfrauProcessPlugin"), "Received data message");
+
+            // Message is made up of 2 parts
+            // - Meta Part
+            // - Data Part
+            zmq::message_t meta_data_part;
+            zmq::message_t data_part;
+            this->zmq_socket_.recv(&meta_data_part);
+            this->zmq_socket_.recv(&data_part);
+
+            // Push the output data frame
+            try {
+                boost::shared_ptr<Frame> data_frame = create_data_frame(meta_data_part, data_part);
+                LOG4CXX_TRACE(Logger::getLogger("FP.JungfrauProcessPlugin"), "Pushing data frame");
+                this->push(std::move(data_frame));
+            } catch(std::runtime_error& err) {
+                ++this->dropped_frames_;
+            }
+        }
+        LOG4CXX_INFO(Logger::getLogger("FP.JungfrauProcessPlugin"), "Shutting down");
     }
-    else if (hdrPtr->messageType == Jungfrau::GLOBAL_HEADER_APPENDIX)
+
+    // Parse the received ZMQ multipart message and extract its contents into a Jungfrau_Message struct
+    boost::shared_ptr<Frame> JungfrauProcessPlugin::create_data_frame(zmq::message_t &meta_data_part, zmq::message_t &data_part)
     {
-      std::string dataString((static_cast<const char *>(frame->get_image_ptr()) + sizeof(Jungfrau::FrameHeader)), hdrPtr->data_size);
+        // Write out the first part of the multipart message (the JSON header) as a string
+        // Create a rapidjson document and parse the header
+        rapidjson::Document rapidjson_doc;
+        rapidjson_doc.Parse( reinterpret_cast<char*>(meta_data_part.data()));
+        if (rapidjson_doc.HasParseError())
+        {
+            throw std::runtime_error("Failed to parse JSON header");
+        }
 
-      publish_meta(get_name(), "jungfrau-headerappendix", dataString, json.str());
+        // Fetch the meta data from the message
+        // and stuff it into a FrameMetaData object
+        FrameMetaData frame_meta_data;
+        frame_meta_data.set_frame_number(rapidjson_doc["frameIndex"].GetUint64());
+        frame_meta_data.set_dataset_name("data");
+        frame_meta_data.set_data_type(raw_16bit);
+        char acq_to_str[21] = {'\0'};
+        snprintf(acq_to_str, sizeof(acq_to_str), "%d", rapidjson_doc["acquisition"].GetInt());
+
+        frame_meta_data.set_acquisition_ID(acq_to_str);
+
+        const rapidjson::Value &shape_value = rapidjson_doc["shape"];
+        rapidjson::Value::ConstArray shape_array = shape_value.GetArray();
+
+        frame_meta_data.set_dimensions({shape_array[0].GetUint64(), shape_array[1].GetUint64()});
+        frame_meta_data.set_compression_type(bslz4);
+
+        // Include the second part of the multipart message (the compressed data)
+        size_t compressed_data_size = data_part.size();
+        const std::byte *byte_ptr = static_cast<const std::byte *>(data_part.data());
+
+        // Construct a json dict of meta data...
+        char to_str[256] = {'\0'};
+        snprintf(to_str, sizeof(to_str), "{\"frame_index\":%" PRIu64 ",\"row\":%d,\"column\":%d,\"shape\":[%u,%u],\"bit_mode\":%d,\
+            \"exp_length\":%u,\"acquisition\":%s}", rapidjson_doc["frameIndex"].GetUint64(), rapidjson_doc["row"].GetInt(),\
+            rapidjson_doc["column"].GetInt(), shape_array[0].GetUint(), shape_array[1].GetUint(), rapidjson_doc["bitmode"].GetInt(), \
+            rapidjson_doc["expLength"].GetUint(), acq_to_str);
+
+        // ...and pass it to the Meta Writer
+        char header_to_str[42] = {'\0'};
+        snprintf(header_to_str, sizeof(header_to_str), "{\"acquisition\":%s}", acq_to_str);
+        this->publish_meta(get_name(), "jungfrau-imagedata", to_str, header_to_str);
+
+        // Construct a new data block frame
+        boost::shared_ptr<Frame> data_block_frame;
+        try {
+            data_block_frame = boost::make_shared<DataBlockFrame>(std::move(frame_meta_data), byte_ptr, compressed_data_size, 0);
+        } catch(std::runtime_error &e) {
+            ++this->dropped_frames_;
+        }
+        return data_block_frame;
     }
-    else if (hdrPtr->messageType == Jungfrau::END_OF_STREAM)
+
+    int JungfrauProcessPlugin::get_version_major()
     {
-      // Add Series number
-      json.add("series", hdrPtr->series);
-
-      publish_meta(get_name(), "jungfrau-end", "", json.str());
+        return JUNGFRAU_DETECTOR_VERSION_MAJOR;
     }
-  }
 
-  /**
-   * Set the encoding on the frame
-   *
-   * \param[out] frame The frame Meta Data object to set the encoding on
-   * \param[in] hdrPtr The header containing the encoding
-   */
-  void JungfrauProcessPlugin::setFrameEncoding(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr)
-  {
-    std::string encoding(hdrPtr->encoding);
-
-    // Parse out lz4
-    std::size_t found = encoding.find("lz4");
-    if (found != std::string::npos)
+    int JungfrauProcessPlugin::get_version_minor()
     {
-      found = encoding.find("bs");
-      if (found != std::string::npos)
-      {
-        frame.set_compression_type(bslz4);
-      }
-      else
-      {
-        frame.set_compression_type(lz4);
-      }
+        return JUNGFRAU_DETECTOR_VERSION_MINOR;
     }
-    else
+
+    int JungfrauProcessPlugin::get_version_patch()
     {
-      frame.set_compression_type(no_compression);
+        return JUNGFRAU_DETECTOR_VERSION_PATCH;
     }
-  }
 
-  /**
-   * Set the data type on the frame
-   *
-   * \param[out] frame The frame Meta Data object to set the encoding on
-   * \param[in] hdrPtr The header containing the encoding
-   */
-  void JungfrauProcessPlugin::setFrameDataType(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr)
-  {
-    std::string dataType(hdrPtr->dataType);
-
-    if (dataType.compare("uint8") == 0)
+    std::string JungfrauProcessPlugin::get_version_short()
     {
-      frame.set_data_type(raw_8bit);
+        return JUNGFRAU_DETECTOR_VERSION_STR_SHORT;
     }
-    else if (dataType.compare("uint16") == 0)
+
+    std::string JungfrauProcessPlugin::get_version_long()
     {
-      frame.set_data_type(raw_16bit);
+        return JUNGFRAU_DETECTOR_VERSION_STR;
     }
-    else if (dataType.compare("uint32") == 0)
-    {
-      frame.set_data_type(raw_32bit);
-    }
-    else
-    {
-      LOG4CXX_ERROR(logger_, "Unknown frame data type :" << dataType);
-    }
-  }
-
-  /**
-   * Set the dimensions on the frame
-   *
-   * \param[out] frame The frame Meta Data object to set the encoding on
-   * \param[in] hdrPtr The header containing the dimensions
-   */
-  void JungfrauProcessPlugin::setFrameDimensions(FrameMetaData &frame, const Jungfrau::FrameHeader *hdrPtr)
-  {
-    dimensions_t dims;
-    if (hdrPtr->shapeSizeZ > 0)
-    {
-      dims.push_back(hdrPtr->shapeSizeZ);
-    }
-    dims.push_back(hdrPtr->shapeSizeY);
-    dims.push_back(hdrPtr->shapeSizeX);
-
-    frame.set_dimensions(dims);
-  }
-
-  int JungfrauProcessPlugin::get_version_major()
-  {
-    return EIGER_DETECTOR_VERSION_MAJOR;
-  }
-
-  int JungfrauProcessPlugin::get_version_minor()
-  {
-    return EIGER_DETECTOR_VERSION_MINOR;
-  }
-
-  int JungfrauProcessPlugin::get_version_patch()
-  {
-    return EIGER_DETECTOR_VERSION_PATCH;
-  }
-
-  std::string JungfrauProcessPlugin::get_version_short()
-  {
-    return EIGER_DETECTOR_VERSION_STR_SHORT;
-  }
-
-  std::string JungfrauProcessPlugin::get_version_long()
-  {
-    return EIGER_DETECTOR_VERSION_STR;
-  }
 
 } /* namespace FrameProcessor */

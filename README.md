@@ -2,8 +2,8 @@
 
 Data acquisition framework for the Jungfrau detector using [odin-data] consisting of:
 
-- EigerMetaWriter: A plugin for the odin-data meta_writer application
-- EigerProcessPlugin: A plugin for the odin-data FrameProcessor
+- JungfrauMetaWriter: A plugin for the odin-data meta_writer application
+- JungfrauProcessPlugin: A plugin for the odin-data FrameProcessor
 
 ## Development
 
@@ -27,11 +27,9 @@ make sure vscode user settings have `cmake.cmakePath` set to `cmake` (the defaul
 
     ii. `> CMake: Install`
 
-4. Install the jungfrau-detector python package with dev dependencies and tickit simulator
+4. Install the jungfrau-detector python package with dev dependencies
 
-    i. `$ pip install -e './python[dev,sim]'`
-
-5. Run the dev deployment from the `deploy` directory with `$ zellij -l layout.kdl`
+    i. `$ pip install -e './python[dev]'`
 
 It is then possible to edit the python applications and restart, or edit the C++
 applications, rebuild and restart.
@@ -43,13 +41,13 @@ full deployment.
 
 ## Related Projects
 
-- [fastcs-odin]: An EPICS driver to control the odin-data / eiger-detector applications
-- [fastcs-eiger]: An EPICS driver to control Eiger detectors
+- [fastcs-odin]: An EPICS driver to control the odin-data / jungfrau-detector applications
+- [fastcs-jungfrau]: An EPICS driver to control Jungfrau detectors
 - [tickit-devices]: A set of simulated devices, including Eiger
 
 [odin-data]: https://github.com/odin-detector/odin-data
 [fastcs-odin]: https://github.com/DiamondLightSource/fastcs-odin
-[fastcs-eiger]: https://github.com/DiamondLightSource/fastcs-eiger
+[fastcs-jungfrau]: https://github.com/DiamondLightSource/fastcs-jungfrau
 [tickit-devices]: https://github.com/DiamondLightSource/tickit-devices
 [devcontainer]: https://code.visualstudio.com/docs/devcontainers/containers
 [launch-config]: https://code.visualstudio.com/docs/editor/debugging
