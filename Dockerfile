@@ -1,4 +1,5 @@
-FROM ghcr.io/odin-detector/odin-data-build:1.13.0-beta.4 AS developer
+ARG ODIN_DATA_VERSION=1.13.0-beta.4
+FROM ghcr.io/odin-detector/odin-data-build:${ODIN_DATA_VERSION} AS developer
 
 FROM developer AS build
 
@@ -48,7 +49,7 @@ RUN python -m pip install .
 # WORKDIR ${SRC}
 # RUN bash ${SRC}/cmk.sh -bsj$(nproc) -l${TARGET_PREFIX}
 
-FROM ghcr.io/odin-detector/odin-data-build:1.13.0-beta.4 AS runtime
+FROM ghcr.io/odin-detector/odin-data-build:${ODIN_DATA_VERSION} AS runtime
 
 COPY --from=build /odin /odin
 COPY --from=build /venv /venv
